@@ -1,72 +1,79 @@
-"""
-board_setup.py
+import random
 
-This module contains the BoardSetup class responsible for:
- - Initializing and resetting a 2D board (0 = water, 1..7 = ship ID).
- - Placing ships according to a dict {ship_id: count}.
- - Providing board statistics and individual tile lookups.
-"""
+SHIP_LENGTHS = {
+    1: [(0, 0), (1, 0)],
+    2: [(0, 0), (1, 0), (2, 0)],
+    3: [(0, 0), (1, 0), (2, 0), (3, 0)],
+    4: [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)],
+    5: [(0, 0), (1, 0), (2, 0), (2, 1)],
+    6: [(0, 0), (0, 1), (0, 2)],
+    7: [(0, 0), (0, 1)]
+}
 
 class BoardSetup:
     def __init__(self, rows: int, cols: int, ships_dict: dict[int, int]):
-        """
-        Initializes BoardSetup.
-
-        :param rows: Number of rows in the board.
-        :param cols: Number of columns in the board.
-        :param ships_dict: Dictionary mapping ship_id -> count.
-                           e.g. {1: 2, 2: 1, 3: 1, ...}
-        """
-        # Tady si uložíme počet řádků, sloupců a lodí
         self.rows = rows
         self.cols = cols
         self.ships_dict = ships_dict
-        
-        # Tady vytvoříme 2D pole pro board: 0 = voda, 1..7 = ID lodě (viz examples)
         self.board = [[0 for _ in range(cols)] for _ in range(rows)]
+        self.ship_positions = {}  # {ship_id: [(x1, y1), (x2, y2), ...]}
 
     def get_board(self) -> list[list[int]]:
-        """
-        Returns the current 2D board state.
-        0 = water, 1..7 = specific ship ID.
-        """
-        raise NotImplementedError("get_board() is not implemented yet.")
+        return self.board
 
     def get_tile(self, x: int, y: int) -> int:
-        """
-        Returns the value at board coordinate (x, y).
-        0 = water, or 1..7 = ship ID.
-        
-        Raises an IndexError if the coordinates are out of bounds.
-        Note: x is column, y is row.
-        """
-        raise NotImplementedError("get_tile() is not implemented yet.")
+        if x < 0 or x >= self.cols or y < 0 or y >= self.rows:
+            raise IndexError("Coordinates out of bounds")
+        return self.board[y][x]
 
     def place_ships(self) -> None:
-        """
-        Places ships onto the board according to self.ships_dict.
+        for ship_id, count in self.ships_dict.items():
+            for _ in range(count):
+                placed = False
+                while not placed:
+                    x = random.randint(0, self.cols - 1)
+                    y = random.randint(0, self.rows - 1)
+                    if self._can_place_ship(x, y, ship_id):
+                        self._place_ship(x, y, ship_id)
+                        placed = True
 
-        - Must ensure no overlap.
-        - Must stay within board bounds.
-        - Cannot place ships with touching sides (diagonals are OK).
-        - If it's impossible, raise ValueError.
-        """
-        # Tady by se měla provést logika umisťování lodí
-        raise NotImplementedError("place_ships() is not implemented yet.")
+    def _can_place_ship(self, x, y, ship_id) -> bool:
+        shape = SHIP_LENGTHS.get(ship_id)
+        if not shape:
+            return False
+        try:
+            # Check for ship overlap
+            for dx, dy in shape:
+                if self.board[y + dy][x + dx] != 0:
+                    return False
+            # Check for neighboring ships (excluding diagonal corners)
+            for dx, dy in shape:
+                for nx, ny in [(dx - 1, dy), (dx + 1, dy), (dx, dy - 1), (dx, dy + 1)]:
+                    if 0 <= x + nx < self.cols and 0 <= y + ny < self.rows:
+                        if self.board[y + ny][x + nx] != 0:
+                            return False
+            return True
+        except IndexError:
+            return False
+
+    def _place_ship(self, x, y, ship_id) -> None:
+        shape = SHIP_LENGTHS.get(ship_id)
+        self.ship_positions.setdefault(ship_id, [])
+        for dx, dy in shape:
+            self.board[y + dy][x + dx] = ship_id
+            self.ship_positions[ship_id].append((x + dx, y + dy))
 
     def reset_board(self) -> None:
-        """
-        Resets the board back to all 0 (water).
-        """
-        raise NotImplementedError("reset_board() is not implemented yet.")
+        self.board = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
+        self.ship_positions.clear()
 
     def board_stats(self) -> dict:
+        empty = sum(cell == 0 for row in self.board for cell in row)
+        occupied = self.rows * self.cols - empty
+        return {"empty_spaces": empty, "occupied_spaces": occupied}
+
+    def get_ship_positions(self, ship_id: int) -> list[tuple[int, int]]:
         """
-        Returns a dict with simple stats about the board:
-            {
-              "empty_spaces": <int>,
-              "occupied_spaces": <int>
-            }
+        Returns a list of (x, y) positions for the given ship_id.
         """
-        # Tady spočítáme a vrátíme statistiky boardu
-        raise NotImplementedError("board_stats() is not implemented yet.")
+        return self.ship_positions.get(ship_id, [])

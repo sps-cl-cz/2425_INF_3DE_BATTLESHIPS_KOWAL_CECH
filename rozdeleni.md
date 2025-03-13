@@ -1,4 +1,4 @@
 # Rozdělení bodů
 
 Matyáš Kowal 100
-Lukáš Čech 999
+Lukáš Čech 100
