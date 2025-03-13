@@ -1,3 +1,4 @@
 # Rozdělení bodů
-Jmeno Prijemni 100
-Jmeno Prijemni 100
+
+Matyáš Kowal 100
+Lukáš Čech 999
